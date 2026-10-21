@@ -1,48 +1,116 @@
-from app import app
-from models import db, User, Conversation, ConversationMember, Message, Email
+from datetime import datetime
+from db import users, conversations, messages, emails
 
-with app.app_context():
-    # Reset database
-    db.drop_all()
-    db.create_all()
+def seed_mongodb():
+    # 1. Clear existing collections
+    users.drop()
+    conversations.drop()
+    messages.drop()
+    emails.drop()
 
-    # 1. Add simple users (no passwords needed)
-    u1 = User(name='Alice', email='alice@college.edu')
-    u2 = User(name='Bob', email='bob@college.edu')
-    u3 = User(name='Charlie', email='charlie@college.edu')
-    db.session.add_all([u1, u2, u3])
-    db.session.commit()
+    now = datetime.utcnow()
 
-    # 2. Add 1-to-1 chat between Alice and Bob
-    conv1 = Conversation(is_group=False)
-    db.session.add(conv1)
-    db.session.flush()
+    # 2. Insert simple users (no passwords needed)
+    users_data = [
+        {'id': 1, 'name': 'Alice', 'email': 'alice@college.edu', 'is_online': False},
+        {'id': 2, 'name': 'Bob', 'email': 'bob@college.edu', 'is_online': False},
+        {'id': 3, 'name': 'Charlie', 'email': 'charlie@college.edu', 'is_online': False}
+    ]
+    users.insert_many(users_data)
+    print("Added users to MongoDB: Alice, Bob, Charlie")
 
-    m1 = ConversationMember(conversation_id=conv1.id, user_id=u1.id, is_admin=True)
-    m2 = ConversationMember(conversation_id=conv1.id, user_id=u2.id, is_admin=False)
-    db.session.add_all([m1, m2])
+    # 3. Create 1-to-1 conversation between Alice and Bob
+    conv1 = {
+        'is_group': False,
+        'name': None,
+        'members': [
+            {'user_id': 1, 'is_admin': True, 'last_read_time': now},
+            {'user_id': 2, 'is_admin': False, 'last_read_time': now}
+        ],
+        'created_at': now
+    }
+    conv1_id = str(conversations.insert_one(conv1).inserted_id)
 
-    msg1 = Message(conversation_id=conv1.id, sender_id=u1.id, text="Hi Bob, have you started Module 2?")
-    msg2 = Message(conversation_id=conv1.id, sender_id=u2.id, text="Hey Alice! Yes, the real-time chat is working.")
-    db.session.add_all([msg1, msg2])
+    # 4. Insert messages in conversation 1
+    messages.insert_many([
+        {
+            'conversation_id': conv1_id,
+            'sender_id': 1,
+            'sender_name': 'Alice',
+            'text': 'Hi Bob, have you started Module 2?',
+            'file_url': None,
+            'file_name': None,
+            'is_edited': False,
+            'is_deleted': False,
+            'created_at': now
+        },
+        {
+            'conversation_id': conv1_id,
+            'sender_id': 2,
+            'sender_name': 'Bob',
+            'text': 'Hey Alice! Yes, the real-time chat with MongoDB is working.',
+            'file_url': None,
+            'file_name': None,
+            'is_edited': False,
+            'is_deleted': False,
+            'created_at': now
+        }
+    ])
 
-    # 3. Add Group Chat "Project Group"
-    grp = Conversation(is_group=True, name="Project Team")
-    db.session.add(grp)
-    db.session.flush()
+    # 5. Create Group Chat "Project Team"
+    grp = {
+        'is_group': True,
+        'name': 'Project Team',
+        'members': [
+            {'user_id': 1, 'is_admin': True, 'last_read_time': now},
+            {'user_id': 2, 'is_admin': False, 'last_read_time': now},
+            {'user_id': 3, 'is_admin': False, 'last_read_time': now}
+        ],
+        'created_at': now
+    }
+    grp_id = str(conversations.insert_one(grp).inserted_id)
 
-    gm1 = ConversationMember(conversation_id=grp.id, user_id=u1.id, is_admin=True)
-    gm2 = ConversationMember(conversation_id=grp.id, user_id=u2.id, is_admin=False)
-    gm3 = ConversationMember(conversation_id=grp.id, user_id=u3.id, is_admin=False)
-    db.session.add_all([gm1, gm2, gm3])
+    messages.insert_one({
+        'conversation_id': grp_id,
+        'sender_id': 1,
+        'sender_name': 'Alice',
+        'text': 'Welcome everyone to our project chat on MongoDB!',
+        'file_url': None,
+        'file_name': None,
+        'is_edited': False,
+        'is_deleted': False,
+        'created_at': now
+    })
 
-    gmsg = Message(conversation_id=grp.id, sender_id=u1.id, text="Welcome everyone to our project chat!")
-    db.session.add(gmsg)
+    # 6. Sample Emails for Member 1 Integration
+    emails.insert_many([
+        {
+            'sender_id': 2,
+            'sender_name': 'Bob',
+            'sender_email': 'bob@college.edu',
+            'recipient_email': 'alice@college.edu',
+            'subject': 'Project Presentation Slides',
+            'body': 'Hi Alice,\nI uploaded the slides for tomorrow.\n- Bob',
+            'folder': 'inbox',
+            'is_starred': True,
+            'is_important': True,
+            'created_at': now
+        },
+        {
+            'sender_id': 1,
+            'sender_name': 'Alice',
+            'sender_email': 'alice@college.edu',
+            'recipient_email': 'bob@college.edu',
+            'subject': 'MongoDB Database Connected',
+            'body': 'Bob,\nThe shared MongoDB database is ready for both members.\n- Alice',
+            'folder': 'sent',
+            'is_starred': False,
+            'is_important': False,
+            'created_at': now
+        }
+    ])
 
-    # 4. Add Sample Emails for Member 1
-    e1 = Email(sender_id=u2.id, recipient_email='alice@college.edu', subject='Project Presentation Slides', body='Hi Alice,\nI uploaded the slides for tomorrow.\n- Bob', folder='inbox', is_starred=True)
-    e2 = Email(sender_id=u1.id, recipient_email='bob@college.edu', subject='Database Schema Updated', body='Bob,\nThe shared database schema is ready for both members.\n- Alice', folder='sent')
-    db.session.add_all([e1, e2])
+    print("MongoDB successfully seeded with sample data!")
 
-    db.session.commit()
-    print("Database seeded with simple sample users and chats!")
+if __name__ == '__main__':
+    seed_mongodb()

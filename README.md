@@ -1,52 +1,58 @@
-# Real-Time Email and Chat System (2-Member Project)
+# Real-Time Email and Chat System (MongoDB & Flask)
 
-This is a simple Flask and Socket.IO web application built for a 2-member project sharing the same SQLite database.
-
-## Architecture & Responsibilities
-
-- **Same Database (`models.py`)**:
-  - `User`: Simple user table (id, name, email, is_online). No passwords or login barriers.
-  - `Conversation`: 1-on-1 and Group chats.
-  - `ConversationMember`: Members of chats and admins.
-  - `Message`: Chat messages with support for file attachments, timestamps, edit/delete.
-  - `Email` & `EmailAttachment`: Email messages, folders (inbox, sent, trash), and attachments.
-
-- **Member 2 — Real-Time Chat Module (Fully Implemented)**:
-  1. 1-to-1 messaging
-  2. Group chat creation
-  3. Group member management (add/remove members)
-  4. Online / Offline status indicator
-  5. Real-time typing indicators ("Alice is typing...")
-  6. Read receipts
-  7. Message delivery status (tick checkmarks)
-  8. Message timestamps (e.g. 10:45 AM)
-  9. Edit and Delete messages
-  10. File & photo sharing in chat
-  11. Chat search
-  12. Conversation message history
-  13. Chat notifications
-
-- **Member 1 — Email Module (Integrated)**:
-  - Inbox, Sent, Trash folders
-  - Compose & send emails
-  - Starred and Important markers
-  - Shared users and database
+A simple, clean Flask and Socket.IO application built for a 2-member project using **MongoDB** (`chat_email_db`) as the common database.
 
 ---
 
-## How to Run
+## 🗄️ MongoDB Collections (Shared between both members)
 
-1. **Install requirements**:
+- **`users`**: `{ id: 1, name: "Alice", email: "alice@college.edu", is_online: false }`
+- **`conversations`**: Stores both 1-on-1 and Group chats with member lists and roles.
+- **`messages`**: Real-time chat messages with timestamps, read receipts, attachments, and edit/delete flags.
+- **`emails`**: Member 1 email storage (inbox, sent, trash, subject, body, starred).
+
+---
+
+## 👥 Module Breakdown
+
+### **Member 2 — Real-Time Chat Module (Fully Implemented)**
+1. **One-to-one messaging**: Instant direct chat with any user.
+2. **Group chat creation**: Create group chats with custom names and multiple members.
+3. **Group member management**: Add or remove members in group info.
+4. **Online / Offline status**: Live presence status indicator dot (green/gray).
+5. **Typing indicators**: Displays *"Alice is typing..."* in real time.
+6. **Read receipts**: Messages marked as read when conversation is opened.
+7. **Message delivery status**: Double tick checkmarks (`✓✓`) that turn blue when read.
+8. **Message timestamps**: Formatted times (e.g. `10:45 AM`) on all message bubbles.
+9. **Edit and Delete messages**: Edit sent text with `(edited)` tag or delete for everyone.
+10. **Chat file sharing**: Attach images (with preview) or documents (with download link).
+11. **Chat search**: Real-time filter across conversations and message history.
+12. **Conversation history**: Loaded directly from MongoDB on chat selection.
+13. **Chat notifications**: Unread count badges in conversation list.
+
+### **Member 1 — Email Module (Integrated on Same MongoDB)**
+- Folders: Inbox, Sent, Trash
+- Compose and send emails
+- Starred & Important markers
+- Common MongoDB collections and users
+
+---
+
+## 🚀 How to Run
+
+1. **Ensure MongoDB is running** on your local machine (`mongodb://localhost:27017`).
+
+2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Seed sample data** (creates Alice, Bob, Charlie and test chats):
+3. **Seed MongoDB with sample data** (Alice, Bob, Charlie & chats):
    ```bash
    python seed.py
    ```
 
-3. **Start the server**:
+4. **Start the Flask server**:
    ```bash
    python app.py
    ```
@@ -54,8 +60,8 @@ This is a simple Flask and Socket.IO web application built for a 2-member projec
 
 ---
 
-## How to Test Two Users (Zero Login Complexity)
+## ⚡ Testing Two Users (No Login Complexity)
 
-- In the top navigation bar, there is a **"Current User"** dropdown.
-- Simply select **Alice** in one browser tab or window, and select **Bob** in another tab or incognito window.
-- You can now chat between Alice and Bob in real-time, see typing indicators, see online dots, and share files immediately!
+- In the top navigation bar, select **Alice** in one tab or window.
+- In another tab or incognito window, select **Bob** from the **"Current User"** dropdown.
+- Click on the chat between Alice and Bob to test real-time messaging, typing indicators, online status, and file sharing in action!
