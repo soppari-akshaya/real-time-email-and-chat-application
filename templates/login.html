@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}OmniSync - Login{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="height: 100%; padding: 2rem;">
+  <div class="card p-4" style="width: 100%; max-width: 440px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-xl); border-radius: var(--radius-lg);">
+    <div class="text-center mb-4">
+      <div class="brand-icon mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.5rem;">
+        <i class="bi bi-clouds-fill"></i>
+      </div>
+      <h3 style="font-weight: 800;">Welcome to OmniSync</h3>
+      <p class="text-muted" style="font-size: 0.875rem;">Sign in to your unified Email &amp; Chat workspace</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <div class="mb-3">
+        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Username or Email</label>
+        <div class="input-group">
+          <span class="input-group-text" style="background: var(--bg-input); border-color: var(--border-color);"><i class="bi bi-person"></i></span>
+          <input type="text" name="identifier" class="form-control" placeholder="e.g. alice or alice@omnisync.com" required autofocus>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Password</label>
+        <div class="input-group">
+          <span class="input-group-text" style="background: var(--bg-input); border-color: var(--border-color);"><i class="bi bi-key"></i></span>
+          <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary-gradient w-100 justify-content-center py-2 mt-2">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+    </form>
+
+    <div class="text-center mt-3">
+      <span style="font-size: 0.85rem; color: var(--text-muted);">Don't have an account?</span>
+      <a href="{{ url_for('auth.register') }}" style="font-size: 0.85rem; font-weight: 600; text-decoration: none; color: var(--primary);">Register here</a>
+    </div>
+
+    <!-- Quick Demo Accounts One-Click Login -->
+    <div class="mt-4 pt-3" style="border-top: 1px dashed var(--border-color);">
+      <div class="text-center mb-2" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em;">
+        Quick Test Accounts (1-Click Login)
+      </div>
+      <div class="d-flex flex-wrap gap-2 justify-content-center">
+        <a href="{{ url_for('auth.quick_login', user_id=1) }}" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">
+          👤 Alice (Member 1)
+        </a>
+        <a href="{{ url_for('auth.quick_login', user_id=2) }}" class="btn btn-sm btn-outline-success" style="font-size: 0.75rem;">
+          💬 Bob (Member 2)
+        </a>
+        <a href="{{ url_for('auth.quick_login', user_id=3) }}" class="btn btn-sm btn-outline-info" style="font-size: 0.75rem;">
+          🎨 Charlie
+        </a>
+        <a href="{{ url_for('auth.quick_login', user_id=5) }}" class="btn btn-sm btn-outline-warning" style="font-size: 0.75rem;">
+          ⚙️ Admin
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

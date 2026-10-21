@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}OmniSync - Admin Console &amp; System Health{% endblock %}
+
+{% block content %}
+<div class="p-4" style="overflow-y: auto; height: 100%;">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 0.25rem;">
+        <i class="bi bi-shield-check text-primary me-2"></i>Admin Console &amp; System Analytics
+      </h2>
+      <p class="text-muted m-0" style="font-size: 0.875rem;">
+        Unified metrics across Member 1 (Email) and Member 2 (Real-Time Chat)
+      </p>
+    </div>
+  </div>
+
+  <!-- Metric Stat Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Users</span>
+          <i class="bi bi-people-fill text-primary" style="font-size: 1.25rem;"></i>
+        </div>
+        <h3 class="mt-2 mb-0" style="font-weight: 800;">{{ stats.total_users }}</h3>
+        <small class="text-success"><i class="bi bi-circle-fill" style="font-size: 8px;"></i> {{ stats.online_users }} Active Now</small>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Active Chats</span>
+          <i class="bi bi-chat-dots-fill text-info" style="font-size: 1.25rem;"></i>
+        </div>
+        <h3 class="mt-2 mb-0" style="font-weight: 800;">{{ stats.total_conversations }}</h3>
+        <small class="text-muted">{{ stats.group_conversations }} Groups &bull; {{ stats.direct_conversations }} Direct</small>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Chat Messages</span>
+          <i class="bi bi-send-check-fill text-success" style="font-size: 1.25rem;"></i>
+        </div>
+        <h3 class="mt-2 mb-0" style="font-weight: 800;">{{ stats.total_messages }}</h3>
+        <small class="text-muted">Real-Time Delivery</small>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        <div class="d-flex align-items-center justify-content-between">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Emails</span>
+          <i class="bi bi-envelope-check-fill text-warning" style="font-size: 1.25rem;"></i>
+        </div>
+        <h3 class="mt-2 mb-0" style="font-weight: 800;">{{ stats.total_emails }}</h3>
+        <small class="text-muted">Common Database Sync</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Directory Table -->
+  <div class="card p-3 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+    <h5 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-person-lines-fill me-2"></i>Registered User Directory</h5>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle" style="color: inherit;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted);">
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Last Active</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <img src="{{ u.to_dict()['avatar_url'] }}" style="width: 32px; height: 32px; border-radius: 50%;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.9rem;">{{ u.username }}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.bio }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size: 0.875rem;">{{ u.email }}</td>
+            <td>
+              <span class="badge {% if u.role == 'admin' %}bg-primary{% else %}bg-secondary{% endif %}" style="font-size: 0.75rem;">
+                {{ u.role }}
+              </span>
+            </td>
+            <td>
+              {% if u.is_online %}
+                <span class="badge bg-success" style="font-size: 0.75rem;"><i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i> Online</span>
+              {% else %}
+                <span class="badge bg-dark" style="font-size: 0.75rem;">Offline</span>
+              {% endif %}
+            </td>
+            <td style="font-size: 0.85rem; color: var(--text-muted);">
+              {{ u.last_seen.strftime('%b %d, %I:%M %p') if u.last_seen else 'Never' }}
+            </td>
+            <td>
+              <a href="{{ url_for('auth.quick_login', user_id=u.id) }}" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">
+                <i class="bi bi-box-arrow-in-right"></i> Log In As
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Live Chat Feed -->
+  <div class="card p-3" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+    <h5 style="font-weight: 700; margin-bottom: 1rem;"><i class="bi bi-clock-history me-2"></i>Recent Message Audit Log</h5>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle" style="color: inherit; font-size: 0.85rem;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+            <th>Sender</th>
+            <th>Type</th>
+            <th>Message Snippet</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in recent_messages %}
+          <tr>
+            <td><strong>{{ m.sender.username if m.sender else 'System' }}</strong></td>
+            <td><span class="badge bg-secondary">{{ m.message_type }}</span></td>
+            <td>{{ m.text }}</td>
+            <td class="text-muted">{{ m.created_at.strftime('%I:%M %p') }}</td>
+            <td>
+              {% if m.is_deleted %}
+                <span class="text-danger">Deleted</span>
+              {% elif m.is_edited %}
+                <span class="text-warning">Edited</span>
+              {% else %}
+                <span class="text-success">Delivered</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

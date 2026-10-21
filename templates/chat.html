@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}OmniSync - Real-Time Chat (Member 2){% endblock %}
+
+{% block content %}
+<div class="chat-container">
+  <!-- LEFT PANE: Conversations & Chat Contacts -->
+  <section class="chat-sidebar">
+    <div class="chat-sidebar-header">
+      <div class="chat-header-actions">
+        <div class="chat-title-group">
+          <h2>Messages</h2>
+        </div>
+        <div class="chat-actions-btns">
+          <button class="icon-btn" id="btn-new-direct" title="New Direct Message">
+            <i class="bi bi-person-plus-fill"></i>
+          </button>
+          <button class="icon-btn" id="btn-new-group" title="Create Group Chat">
+            <i class="bi bi-people-fill"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search conversations -->
+      <div class="search-box-wrapper">
+        <i class="bi bi-search"></i>
+        <input type="text" id="search-conversations-input" class="search-input" placeholder="Search chats or members...">
+      </div>
+    </div>
+
+    <!-- Conversations list -->
+    <div class="conversations-list" id="conversations-list">
+      <!-- Populated dynamically by chat.js -->
+    </div>
+  </section>
+
+  <!-- CENTER PANE: Conversation & Messages Area -->
+  <section class="chat-main">
+    <!-- Empty State when no conversation selected -->
+    <div class="chat-empty-state" id="chat-empty-state" style="display: none;">
+      <div class="empty-icon-bubble">
+        <i class="bi bi-chat-heart-fill"></i>
+      </div>
+      <h3>Real-Time Chat Module</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Select an existing conversation on the left, start a new 1-on-1 direct message, or create a group chat.
+      </p>
+      <button class="btn-primary-gradient" id="empty-new-chat-btn" onclick="document.getElementById('btn-new-direct').click()">
+        <i class="bi bi-chat-plus-fill"></i> Start New Chat
+      </button>
+    </div>
+
+    <!-- Active Chat Pane -->
+    <div id="chat-active-pane" style="display: flex; flex-direction: column; height: 100%;">
+      <!-- Active Chat Header -->
+      <div class="active-chat-header">
+        <div class="active-chat-user" id="active-chat-user-click" title="Click to view details">
+          <div class="conv-avatar-wrap" style="width: 38px; height: 38px;">
+            <img src="" id="active-chat-avatar" alt="Chat Avatar" class="conv-avatar">
+          </div>
+          <div>
+            <div class="active-chat-name" id="active-chat-name">Select Chat</div>
+            <div class="active-chat-status" id="active-chat-status">Offline</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="header-tool-btn" id="toggle-msg-search-btn" title="Search inside this conversation">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- In-chat search bar -->
+      <div class="in-chat-search-bar" id="in-chat-search-bar">
+        <i class="bi bi-search" style="color: var(--text-muted);"></i>
+        <input type="text" id="msg-search-input" class="search-input" placeholder="Search in this conversation...">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('in-chat-search-bar').classList.remove('show'); document.getElementById('msg-search-input').value=''; ChatApp.filterChatMessages('');">Close</button>
+      </div>
+
+      <!-- Messages Feed Area -->
+      <div class="chat-messages-area" id="chat-messages-area">
+        <!-- Messages loaded dynamically -->
+      </div>
+
+      <!-- Real-time Typing Indicator -->
+      <div class="typing-indicator-bar" id="typing-indicator-bar">
+        <div class="typing-dots">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+        <span id="typing-indicator-text">Someone is typing...</span>
+      </div>
+
+      <!-- File Attachment preview strip / edit indicator -->
+      <div class="file-preview-strip" id="file-preview-strip"></div>
+
+      <!-- Chat Input Footer -->
+      <div class="chat-footer">
+        <div class="input-row">
+          <!-- Attachment button -->
+          <input type="file" id="file-attachment-input" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt,.zip">
+          <button type="button" class="input-action-btn" onclick="document.getElementById('file-attachment-input').click()" title="Attach file or photo">
+            <i class="bi bi-paperclip"></i>
+          </button>
+
+          <!-- Textarea -->
+          <textarea id="message-input" class="message-textarea" placeholder="Type a message... (Press Enter to send)" rows="1"></textarea>
+
+          <!-- Send Button -->
+          <button type="button" id="send-message-btn" class="send-btn" title="Send message">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL 1: Create Group Chat -->
+<div class="modal-overlay" id="create-group-modal">
+  <div class="omni-modal">
+    <div class="modal-header">
+      <h5 class="m-0" style="font-weight: 700;"><i class="bi bi-people-fill text-primary me-2"></i>Create New Group</h5>
+      <button type="button" class="btn-close" id="cancel-group-btn"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3">
+        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Group Name *</label>
+        <input type="text" id="group-name-input" class="form-control" placeholder="e.g. Design &amp; Dev Team" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Group Description</label>
+        <input type="text" id="group-desc-input" class="form-control" placeholder="What is this group about?">
+      </div>
+      <div class="mb-2">
+        <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Select Members</label>
+        <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem;">
+          {% for u in all_users %}
+          <div class="form-check d-flex align-items-center justify-content-between py-1">
+            <div class="d-flex align-items-center gap-2">
+              <img src="{{ u.to_dict()['avatar_url'] }}" style="width: 24px; height: 24px; border-radius: 50%;">
+              <label class="form-check-label" for="member-cb-{{ u.id }}" style="font-size: 0.875rem;">
+                {{ u.username }} <small class="text-muted">({{ u.email }})</small>
+              </label>
+            </div>
+            <input class="form-check-input group-member-checkbox" type="checkbox" value="{{ u.id }}" id="member-cb-{{ u.id }}">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-group-modal').classList.remove('show')">Cancel</button>
+      <button type="button" class="btn btn-primary" id="submit-create-group-btn">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2: New Direct Chat -->
+<div class="modal-overlay" id="new-direct-modal">
+  <div class="omni-modal">
+    <div class="modal-header">
+      <h5 class="m-0" style="font-weight: 700;"><i class="bi bi-person-plus-fill text-primary me-2"></i>New Direct Message</h5>
+      <button type="button" class="btn-close" id="cancel-direct-btn"></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Select a registered colleague to start messaging:</p>
+      <div class="d-flex flex-direction-column gap-1" style="display: flex; flex-direction: column;">
+        {% for u in all_users %}
+        <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: var(--bg-input); cursor: pointer; transition: background 0.15s;" onclick="ChatApp.startDirectChat({{ u.id }})">
+          <div class="d-flex align-items-center gap-2">
+            <img src="{{ u.to_dict()['avatar_url'] }}" style="width: 32px; height: 32px; border-radius: 50%;">
+            <div>
+              <div style="font-weight: 600; font-size: 0.9rem;">{{ u.username }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.email }}</div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">Chat</button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 3: Group Details & Member Management -->
+<div class="modal-overlay" id="group-details-modal">
+  <div class="omni-modal">
+    <div class="modal-header">
+      <div>
+        <h5 class="m-0" id="gmodal-group-name" style="font-weight: 700;">Group Info</h5>
+        <small class="text-muted" id="gmodal-group-desc">Description</small>
+      </div>
+      <button type="button" class="btn-close" id="close-group-details-btn"></button>
+    </div>
+    <div class="modal-body">
+      <!-- Admin Controls to add members -->
+      <div id="gmodal-admin-controls" style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; display: block;">Add Member to Group</label>
+        <div class="d-flex gap-2">
+          <select id="select-add-member" class="form-select form-select-sm">
+            <option value="">-- Choose User --</option>
+            {% for u in all_users %}
+            <option value="{{ u.id }}">{{ u.username }} ({{ u.email }})</option>
+            {% endfor %}
+          </select>
+          <button type="button" id="btn-add-group-member" class="btn btn-sm btn-primary">Add</button>
+        </div>
+      </div>
+
+      <h6 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">Group Members</h6>
+      <div id="gmodal-members-list" style="max-height: 220px; overflow-y: auto;">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+      <button type="button" id="btn-leave-group" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-box-arrow-left me-1"></i> Leave Group
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('group-details-modal').classList.remove('show')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    ChatApp.init({{ current_user.id }});
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}OmniSync - Mailbox (Member 1 Integration){% endblock %}
+
+{% block content %}
+<div class="email-layout">
+  <!-- Email Folder Navigation Sidebar -->
+  <aside class="email-folder-sidebar">
+    <button type="button" class="btn-primary-gradient compose-btn-full" id="btn-open-compose">
+      <i class="bi bi-pencil-square"></i> Compose
+    </button>
+
+    <ul class="folder-nav">
+      <li class="folder-item {% if current_folder == 'inbox' %}active{% endif %}">
+        <a href="{{ url_for('email.mailbox_view', folder='inbox') }}">
+          <i class="bi bi-inbox-fill"></i>
+          <span>Inbox</span>
+        </a>
+      </li>
+      <li class="folder-item {% if current_folder == 'sent' %}active{% endif %}">
+        <a href="{{ url_for('email.mailbox_view', folder='sent') }}">
+          <i class="bi bi-send-fill"></i>
+          <span>Sent</span>
+        </a>
+      </li>
+      <li class="folder-item {% if current_folder == 'drafts' %}active{% endif %}">
+        <a href="{{ url_for('email.mailbox_view', folder='drafts') }}">
+          <i class="bi bi-file-earmark-text-fill"></i>
+          <span>Drafts</span>
+        </a>
+      </li>
+      <li class="folder-item {% if current_folder == 'trash' %}active{% endif %}">
+        <a href="{{ url_for('email.mailbox_view', folder='trash') }}">
+          <i class="bi bi-trash-fill"></i>
+          <span>Trash</span>
+        </a>
+      </li>
+    </ul>
+
+    <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
+    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+      Member 1 Responsibilities
+    </div>
+    <ul style="list-style: none; padding: 0; font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
+      <li><i class="bi bi-check2 text-success me-1"></i> Common Auth &amp; Profile</li>
+      <li><i class="bi bi-check2 text-success me-1"></i> Inbox, Sent, Drafts, Trash</li>
+      <li><i class="bi bi-check2 text-success me-1"></i> Compose, Reply, Forward</li>
+      <li><i class="bi bi-check2 text-success me-1"></i> Attachments &amp; Search</li>
+      <li><i class="bi bi-check2 text-success me-1"></i> Star &amp; Important Markers</li>
+    </ul>
+  </aside>
+
+  <!-- Main Email Panel -->
+  <section class="email-main-panel">
+    <div class="email-header-bar">
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="m-0" style="font-size: 1.15rem; font-weight: 700; text-transform: capitalize;">{{ current_folder }}</h3>
+      </div>
+      <div class="email-search-wrap">
+        <i class="bi bi-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+        <input type="text" id="email-search-input" class="search-input" placeholder="Search emails...">
+      </div>
+    </div>
+
+    <!-- Email List -->
+    <div class="email-list-area" id="email-list-container">
+      <!-- Loaded dynamically via email.js -->
+    </div>
+  </section>
+</div>
+
+<!-- Compose Email Modal -->
+<div class="modal-overlay" id="compose-email-modal">
+  <div class="omni-modal" style="max-width: 600px;">
+    <div class="modal-header">
+      <h5 class="m-0" style="font-weight: 700;"><i class="bi bi-envelope-plus text-primary me-2"></i>New Message</h5>
+      <button type="button" class="btn-close" id="close-compose-btn"></button>
+    </div>
+    <form id="compose-email-form" enctype="multipart/form-data">
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">To *</label>
+          <input type="text" name="recipients" class="form-control" placeholder="bob@omnisync.com, charlie@omnisync.com" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Subject</label>
+          <input type="text" name="subject" class="form-control" placeholder="Subject...">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Message Body</label>
+          <textarea name="body" class="form-control" rows="6" placeholder="Write your email here..."></textarea>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size: 0.85rem; font-weight: 600;"><i class="bi bi-paperclip"></i> Attachments</label>
+          <input type="file" name="attachments" multiple class="form-control form-control-sm">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('compose-email-modal').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill me-1"></i> Send Email</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View Email Modal -->
+<div class="modal-overlay" id="view-email-modal">
+  <div class="omni-modal" style="max-width: 650px;">
+    <div class="modal-header">
+      <h5 class="m-0" id="view-email-subject" style="font-weight: 700;">Subject</h5>
+      <button type="button" class="btn-close" onclick="document.getElementById('view-email-modal').classList.remove('show')"></button>
+    </div>
+    <div class="modal-body">
+      <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+        <div>
+          <div id="view-email-sender" style="font-weight: 600; font-size: 0.9rem;">From</div>
+          <div id="view-email-to" style="font-size: 0.8rem; color: var(--text-muted);">To</div>
+        </div>
+        <div id="view-email-date" style="font-size: 0.8rem; color: var(--text-muted);">Date</div>
+      </div>
+      <div id="view-email-body" style="white-space: pre-wrap; font-size: 0.9rem; margin-top: 1rem; min-height: 120px;"></div>
+      
+      <div id="view-email-attachments" style="margin-top: 1.5rem;"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="alert('Reply window opened with quoted text');">
+        <i class="bi bi-reply-fill"></i> Reply
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="alert('Forward window opened');">
+        <i class="bi bi-forward-fill"></i> Forward
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('view-email-modal').classList.remove('show')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/email.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    EmailApp.init('{{ current_folder }}');
+  });
+</script>
+{% endblock %}
