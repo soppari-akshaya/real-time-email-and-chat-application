@@ -1,116 +1,58 @@
-from datetime import datetime
-from db import users, conversations, messages, emails
+from werkzeug.security import generate_password_hash
+from database import get_db, init_db
 
-def seed_mongodb():
-    # 1. Clear existing collections
-    users.drop()
-    conversations.drop()
-    messages.drop()
-    emails.drop()
+def seed_sqlite():
+    init_db()
+    conn = get_db()
+    cursor = conn.cursor()
 
-    now = datetime.utcnow()
+    cursor.execute("DELETE FROM messages;")
+    cursor.execute("DELETE FROM conversation_members;")
+    cursor.execute("DELETE FROM conversations;")
+    cursor.execute("DELETE FROM users;")
+    cursor.execute("DELETE FROM sqlite_sequence;")
 
-    # 2. Insert simple users (no passwords needed)
+    default_pwd = generate_password_hash('password123')
+
     users_data = [
-        {'id': 1, 'name': 'Alice', 'email': 'alice@college.edu', 'is_online': False},
-        {'id': 2, 'name': 'Bob', 'email': 'bob@college.edu', 'is_online': False},
-        {'id': 3, 'name': 'Charlie', 'email': 'charlie@college.edu', 'is_online': False}
+        (1, 'Akshaya', 'akshaya@gmail.com', default_pwd, 0),
+        (2, 'Harika', 'harika@gmail.com', default_pwd, 0),
+        (3, 'Himaja', 'himaja@gmail.com', default_pwd, 0)
     ]
-    users.insert_many(users_data)
-    print("Added users to MongoDB: Alice, Bob, Charlie")
+    cursor.executemany("""
+        INSERT INTO users (id, name, email, password_hash, is_online, created_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    """, users_data)
 
-    # 3. Create 1-to-1 conversation between Alice and Bob
-    conv1 = {
-        'is_group': False,
-        'name': None,
-        'members': [
-            {'user_id': 1, 'is_admin': True, 'last_read_time': now},
-            {'user_id': 2, 'is_admin': False, 'last_read_time': now}
-        ],
-        'created_at': now
-    }
-    conv1_id = str(conversations.insert_one(conv1).inserted_id)
+    cursor.execute("INSERT INTO conversations (id, is_group, name, created_at) VALUES (1, 0, NULL, CURRENT_TIMESTAMP)")
+    cursor.execute("""
+        INSERT INTO conversation_members (conversation_id, user_id, is_admin, last_read_time)
+        VALUES (1, 1, 1, CURRENT_TIMESTAMP), (1, 2, 0, CURRENT_TIMESTAMP)
+    """)
 
-    # 4. Insert messages in conversation 1
-    messages.insert_many([
-        {
-            'conversation_id': conv1_id,
-            'sender_id': 1,
-            'sender_name': 'Alice',
-            'text': 'Hi Bob, have you started Module 2?',
-            'file_url': None,
-            'file_name': None,
-            'is_edited': False,
-            'is_deleted': False,
-            'created_at': now
-        },
-        {
-            'conversation_id': conv1_id,
-            'sender_id': 2,
-            'sender_name': 'Bob',
-            'text': 'Hey Alice! Yes, the real-time chat with MongoDB is working.',
-            'file_url': None,
-            'file_name': None,
-            'is_edited': False,
-            'is_deleted': False,
-            'created_at': now
-        }
-    ])
+    cursor.execute("""
+        INSERT INTO messages (conversation_id, sender_id, sender_name, text, is_edited, is_deleted, created_at)
+        VALUES 
+        (1, 1, 'Akshaya', 'Hi Harika, have you started Module 2?', 0, 0, CURRENT_TIMESTAMP),
+        (1, 2, 'Harika', 'Hey Akshaya! Yes, the real-time chat with SQLite is working great.', 0, 0, CURRENT_TIMESTAMP)
+    """)
 
-    # 5. Create Group Chat "Project Team"
-    grp = {
-        'is_group': True,
-        'name': 'Project Team',
-        'members': [
-            {'user_id': 1, 'is_admin': True, 'last_read_time': now},
-            {'user_id': 2, 'is_admin': False, 'last_read_time': now},
-            {'user_id': 3, 'is_admin': False, 'last_read_time': now}
-        ],
-        'created_at': now
-    }
-    grp_id = str(conversations.insert_one(grp).inserted_id)
+    cursor.execute("INSERT INTO conversations (id, is_group, name, created_at) VALUES (2, 1, 'Project Team', CURRENT_TIMESTAMP)")
+    cursor.execute("""
+        INSERT INTO conversation_members (conversation_id, user_id, is_admin, last_read_time)
+        VALUES 
+        (2, 1, 1, CURRENT_TIMESTAMP),
+        (2, 2, 0, CURRENT_TIMESTAMP),
+        (2, 3, 0, CURRENT_TIMESTAMP)
+    """)
 
-    messages.insert_one({
-        'conversation_id': grp_id,
-        'sender_id': 1,
-        'sender_name': 'Alice',
-        'text': 'Welcome everyone to our project chat on MongoDB!',
-        'file_url': None,
-        'file_name': None,
-        'is_edited': False,
-        'is_deleted': False,
-        'created_at': now
-    })
+    cursor.execute("""
+        INSERT INTO messages (conversation_id, sender_id, sender_name, text, is_edited, is_deleted, created_at)
+        VALUES (2, 1, 'Akshaya', 'Welcome everyone to our project chat on SQLite!', 0, 0, CURRENT_TIMESTAMP)
+    """)
 
-    # 6. Sample Emails for Member 1 Integration
-    emails.insert_many([
-        {
-            'sender_id': 2,
-            'sender_name': 'Bob',
-            'sender_email': 'bob@college.edu',
-            'recipient_email': 'alice@college.edu',
-            'subject': 'Project Presentation Slides',
-            'body': 'Hi Alice,\nI uploaded the slides for tomorrow.\n- Bob',
-            'folder': 'inbox',
-            'is_starred': True,
-            'is_important': True,
-            'created_at': now
-        },
-        {
-            'sender_id': 1,
-            'sender_name': 'Alice',
-            'sender_email': 'alice@college.edu',
-            'recipient_email': 'bob@college.edu',
-            'subject': 'MongoDB Database Connected',
-            'body': 'Bob,\nThe shared MongoDB database is ready for both members.\n- Alice',
-            'folder': 'sent',
-            'is_starred': False,
-            'is_important': False,
-            'created_at': now
-        }
-    ])
-
-    print("MongoDB successfully seeded with sample data!")
+    conn.commit()
+    conn.close()
 
 if __name__ == '__main__':
-    seed_mongodb()
+    seed_sqlite()

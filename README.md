@@ -1,58 +1,70 @@
-# Real-Time Email and Chat System (MongoDB & Flask)
+# Real-Time Chat System (SQLite & Flask)
 
-A simple, clean Flask and Socket.IO application built for a 2-member project using **MongoDB** (`chat_email_db`) as the common database.
-
----
-
-## 🗄️ MongoDB Collections (Shared between both members)
-
-- **`users`**: `{ id: 1, name: "Alice", email: "alice@college.edu", is_online: false }`
-- **`conversations`**: Stores both 1-on-1 and Group chats with member lists and roles.
-- **`messages`**: Real-time chat messages with timestamps, read receipts, attachments, and edit/delete flags.
-- **`emails`**: Member 1 email storage (inbox, sent, trash, subject, body, starred).
+A clean, modular Flask and Socket.IO application built with separate **HTML**, **CSS**, **JS**, and **Python** files using **SQLite** (`instance/database.sqlite`) as the shared database.
 
 ---
 
-## 👥 Module Breakdown
+## 📁 Modular Project Structure
 
-### **Member 2 — Real-Time Chat Module (Fully Implemented)**
-1. **One-to-one messaging**: Instant direct chat with any user.
-2. **Group chat creation**: Create group chats with custom names and multiple members.
-3. **Group member management**: Add or remove members in group info.
-4. **Online / Offline status**: Live presence status indicator dot (green/gray).
-5. **Typing indicators**: Displays *"Alice is typing..."* in real time.
-6. **Read receipts**: Messages marked as read when conversation is opened.
-7. **Message delivery status**: Double tick checkmarks (`✓✓`) that turn blue when read.
-8. **Message timestamps**: Formatted times (e.g. `10:45 AM`) on all message bubbles.
-9. **Edit and Delete messages**: Edit sent text with `(edited)` tag or delete for everyone.
-10. **Chat file sharing**: Attach images (with preview) or documents (with download link).
-11. **Chat search**: Real-time filter across conversations and message history.
-12. **Conversation history**: Loaded directly from MongoDB on chat selection.
-13. **Chat notifications**: Unread count badges in conversation list.
+```
+real-time-email-and-chat-system/
+│
+├── database.py              # SQLite connection helper & schema creation
+├── models.py                # Data access queries (users, conversations, messages)
+├── utils.py                 # Active user resolution & session helpers
+├── extensions.py            # Shared Socket.IO instance
+├── sockets.py               # Socket.IO real-time event handlers
+├── app.py                   # Application factory & Blueprint registration
+├── seed.py                  # Database seeder for SQLite
+│
+├── routes/                  # Modular Python route controllers
+│   ├── __init__.py
+│   ├── auth_routes.py       # Switch-user & quick-login
+│   ├── chat_routes.py       # Chat views, conversation APIs, file upload
+│   └── user_routes.py       # Registered users directory & search API
+│
+├── templates/               # HTML Templates
+│   ├── base.html            # Main layout, navbar, active user pill & switch menu
+│   └── chat.html            # Real-time chat interface & modals
+│
+├── static/
+│   ├── css/                 # CSS Style Sheets
+│   │   ├── style.css        # Base design tokens, typography, navbar
+│   │   └── chat.css         # Chat bubbles, attachments, typing indicator, toasts
+│   │
+│   ├── js/                  # JavaScript Logic (No inline scripts)
+│   │   └── chat.js          # Real-time WebSocket chat logic & notifications
+│   │
+│   └── uploads/             # Chat file & image attachments
+│
+└── instance/
+    └── database.sqlite      # SQLite database file
+```
 
-### **Member 1 — Email Module (Integrated on Same MongoDB)**
-- Folders: Inbox, Sent, Trash
-- Compose and send emails
-- Starred & Important markers
-- Common MongoDB collections and users
+---
+
+## 🗄️ SQLite Database Schema
+
+- **`users`**: `id`, `name`, `email`, `password_hash`, `is_online`, `created_at`
+- **`conversations`**: `id`, `is_group`, `name`, `created_at`
+- **`conversation_members`**: `id`, `conversation_id`, `user_id`, `is_admin`, `last_read_time`
+- **`messages`**: `id`, `conversation_id`, `sender_id`, `sender_name`, `text`, `file_url`, `file_name`, `status`, `is_edited`, `is_deleted`, `created_at`
 
 ---
 
 ## 🚀 How to Run
 
-1. **Ensure MongoDB is running** on your local machine (`mongodb://localhost:27017`).
-
-2. **Install dependencies**:
+1. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Seed MongoDB with sample data** (Alice, Bob, Charlie & chats):
+2. **Seed SQLite database** (Akshaya, Harika, Himaja & chats):
    ```bash
    python seed.py
    ```
 
-4. **Start the Flask server**:
+3. **Start the Flask server**:
    ```bash
    python app.py
    ```
@@ -60,8 +72,16 @@ A simple, clean Flask and Socket.IO application built for a 2-member project usi
 
 ---
 
-## ⚡ Testing Two Users (No Login Complexity)
+## ⚡ Real-Time Chat & User Switching
 
-- In the top navigation bar, select **Alice** in one tab or window.
-- In another tab or incognito window, select **Bob** from the **"Current User"** dropdown.
-- Click on the chat between Alice and Bob to test real-time messaging, typing indicators, online status, and file sharing in action!
+1. **Direct Access**:
+   - Navigate to **http://127.0.0.1:5000** to directly enter the chat workspace.
+   - You are immediately authenticated with the active registered user.
+
+2. **Switch Users Anytime**:
+   - Use the **"Switch User"** dropdown in the top navbar to instantly toggle between **Akshaya**, **Harika**, **Himaja**, and **Nakka kavya**.
+
+3. **Send Messages to Registered Email Users**:
+   - In the chat interface, click **"New Chat"**.
+   - Search or click **"Message"** on any registered user, or type their registered email directly.
+   - Send real-time chat messages with typing indicators, delivery statuses, file attachments, and bottom-right notifications!

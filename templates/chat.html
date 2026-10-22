@@ -1,74 +1,111 @@
 {% extends "base.html" %}
 
-{% block title %}Chat Module - Member 2{% endblock %}
+{% block title %}Real-Time Chat - Team Workspace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="row g-0 chat-box-card">
-    <!-- LEFT COLUMN: Conversation List -->
     <div class="col-md-4 col-lg-3 chat-sidebar">
-        <!-- Top Toolbar -->
-        <div class="p-3 border-bottom">
+        <div class="p-3 border-bottom bg-white">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0 fw-bold">Chats</h5>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newDirectModal" title="New Direct Message">
-                        <i class="bi bi-person-plus"></i>
+                <h5 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                    <span>Conversations</span>
+                </h5>
+                <div class="d-flex gap-1 align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary rounded-circle" id="notifToggleBtn" onclick="toggleNotifications()" title="Toggle Sound & Desktop Notifications">
+                        <i class="bi bi-bell-fill text-primary" id="notifIcon"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newGroupModal" title="Create Group Chat">
-                        <i class="bi bi-people"></i>
+                    <button class="btn btn-sm btn-primary rounded-pill px-2" data-bs-toggle="modal" data-bs-target="#newDirectModal" title="Message a Registered Email User">
+                        <i class="bi bi-person-plus-fill me-1"></i> New Chat
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="modal" data-bs-target="#newGroupModal" title="Create Group Chat">
+                        <i class="bi bi-people-fill"></i>
                     </button>
                 </div>
             </div>
-            <!-- Search chats & messages -->
             <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input type="text" id="searchInput" class="form-control" placeholder="Search conversations...">
+                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="searchInput" class="form-control bg-light border-start-0" placeholder="Search chats or messages...">
             </div>
         </div>
 
-        <!-- Chat List Items -->
-        <div class="chat-list" id="conversationList">
-            <!-- Populated via chat.js -->
-        </div>
+        <div class="chat-list" id="conversationList"></div>
     </div>
 
-    <!-- RIGHT COLUMN: Active Chat Window -->
     <div class="col-md-8 col-lg-9 chat-window">
-        <!-- Chat Header -->
         <div class="chat-header d-flex justify-content-between align-items-center" id="chatHeader">
-            <div>
-                <h6 class="mb-0 fw-bold" id="chatTitle">Select a conversation</h6>
-                <small class="text-muted" id="chatStatus">Click a chat from the left to start messaging</small>
+            <div class="d-flex align-items-center gap-3">
+                <div id="chatAvatar" class="user-avatar-md d-none">?</div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0 fw-bold" id="chatTitle">Select a conversation</h6>
+                        <span id="chatEmailBadge" class="badge bg-light text-primary border d-none small"></span>
+                    </div>
+                    <small class="text-muted" id="chatStatus">Click a chat from the left or message a registered user</small>
+                </div>
             </div>
-            <div>
-                <button class="btn btn-sm btn-outline-secondary d-none" id="groupInfoBtn" data-bs-toggle="modal" data-bs-target="#groupInfoModal">
-                    <i class="bi bi-info-circle"></i> Group Info
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill d-none" id="searchChatBtn" onclick="toggleChatSearch()" title="Search messages in this chat">
+                    <i class="bi bi-search me-1"></i> Search
+                </button>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill d-none" id="groupInfoBtn" data-bs-toggle="modal" data-bs-target="#groupInfoModal">
+                    <i class="bi bi-info-circle me-1"></i> Group Info
+                </button>
+                <div class="dropdown d-none" id="chatHistoryMenu">
+                    <button class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="dropdown" title="Conversation Options">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><a class="dropdown-item small" href="#" onclick="exportChatHistory(); return false;"><i class="bi bi-download me-2 text-primary"></i> Export History</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item small text-danger" href="#" onclick="clearChatHistory(); return false;"><i class="bi bi-trash3 me-2"></i> Clear History</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-search-bar d-none" id="chatSearchBar">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="chatSearchInput" class="form-control border-start-0 border-end-0" placeholder="Search messages in this conversation...">
+                <span class="input-group-text bg-white border-start-0 text-muted small" id="chatSearchCount"></span>
+                <button class="btn btn-outline-secondary" type="button" onclick="closeChatSearch()"><i class="bi bi-x-lg"></i></button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="messagesArea">
+            <div class="text-center text-muted my-auto p-4">
+                <div class="auth-icon-circle mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                    <i class="bi bi-chat-dots-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Real-Time Messaging with Registered Users</h5>
+                <p class="text-muted small mb-3" style="max-width: 420px; margin: 0 auto;">
+                    Select an active chat from the left sidebar or start a new conversation with any registered email user.
+                </p>
+                <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#newDirectModal">
+                    <i class="bi bi-person-plus-fill me-1"></i> Message a Registered User
                 </button>
             </div>
         </div>
 
-        <!-- Messages Feed -->
-        <div class="chat-messages" id="messagesArea">
-            <div class="text-center text-muted my-auto">
-                <i class="bi bi-chat-text" style="font-size: 3rem;"></i>
-                <p class="mt-2">Select a chat on the left to start messaging in real-time.</p>
-            </div>
-        </div>
-
-        <!-- Real-Time Typing Indicator -->
         <div class="typing-box" id="typingIndicator"></div>
 
-        <!-- Message Input Bar -->
         <div class="chat-input-bar">
-            <!-- Hidden file upload input -->
             <input type="file" id="chatFileInput" class="d-none">
+            <input type="file" id="chatPhotoInput" class="d-none" accept="image/*">
 
             <form id="chatForm" class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('chatFileInput').click();" title="Attach image or file">
+                <button type="button" class="btn btn-light border rounded-circle text-primary" onclick="document.getElementById('chatPhotoInput').click();" title="Send Photo">
+                    <i class="bi bi-image-fill"></i>
+                </button>
+                <button type="button" class="btn btn-light border rounded-circle text-secondary" onclick="document.getElementById('chatFileInput').click();" title="Attach Document or File">
                     <i class="bi bi-paperclip"></i>
                 </button>
-                <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." autocomplete="off" disabled>
-                <button type="submit" id="sendBtn" class="btn btn-primary px-3" disabled>
+                <input type="text" id="messageInput" class="form-control rounded-pill px-3" placeholder="Type a message to registered user..." autocomplete="off" disabled>
+                <button type="submit" id="sendBtn" class="btn btn-primary rounded-circle px-3 py-2 shadow-sm" disabled title="Send Message">
                     <i class="bi bi-send-fill"></i>
                 </button>
             </form>
@@ -76,92 +113,149 @@
     </div>
 </div>
 
-<!-- MODAL 1: Start 1-on-1 Chat -->
 <div class="modal fade" id="newDirectModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h6 class="modal-title fw-bold">Start Direct Chat</h6>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-1">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">Message a Registered Email User</h6>
+                    <small class="text-muted">Send instant messages to any registered user</small>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for u in other_users %}
-                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3" onclick="startDirectChat({{ u.id }})">
-                        <div>
-                            <strong>{{ u.name }}</strong>
-                            <div class="small text-muted">{{ u.email }}</div>
-                        </div>
-                        <span class="badge bg-primary rounded-pill">Message</span>
-                    </button>
-                    {% endfor %}
+            
+            <div class="modal-body pt-2">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="registeredUserFilter" class="form-control" placeholder="Search by name or email address...">
+                    </div>
                 </div>
+
+                <div class="p-2 mb-3 bg-light rounded border">
+                    <small class="fw-semibold text-secondary d-block mb-1">Or start chat by typing registered email:</small>
+                    <div class="d-flex gap-2">
+                        <input type="email" id="directChatEmailInput" class="form-control form-control-sm" placeholder="user@gmail.com">
+                        <button type="button" class="btn btn-sm btn-primary text-nowrap" onclick="startDirectChatByEmail()">
+                            <i class="bi bi-chat-dots-fill me-1"></i> Message
+                        </button>
+                    </div>
+                    <div id="emailChatError" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <label class="form-label small fw-semibold text-muted mb-2">Registered Users in Directory:</label>
+                <div class="list-group list-group-flush border rounded overflow-auto" id="registeredUsersModalList" style="max-height: 250px;">
+                    {% if other_users %}
+                        {% for u in other_users %}
+                        <div class="list-group-item list-group-item-action registered-user-row d-flex justify-content-between align-items-center p-3" 
+                             data-name="{{ u.name|lower }}" 
+                             data-email="{{ u.email|lower }}"
+                             onclick="startDirectChat({{ u.id }}, '{{ u.name|escape }}', '{{ u.email|escape }}')">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="user-avatar-circle">
+                                    {{ u.name[:1]|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ u.name }}</div>
+                                    <div class="small text-muted d-flex align-items-center gap-1">
+                                        <i class="bi bi-envelope"></i> {{ u.email }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="status-dot {{ 'online' if u.is_online else '' }}"></span>
+                                <span class="badge bg-primary-subtle text-primary border rounded-pill">Message</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted p-4 small">
+                            No other registered users yet. Invite a peer to register!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL 2: Create Group Chat -->
 <div class="modal fade" id="newGroupModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h6 class="modal-title fw-bold">Create New Group Chat</h6>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-1">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">Create New Group Chat</h6>
+                    <small class="text-muted">Chat with multiple registered email users at once</small>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body pt-2">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Group Name *</label>
-                    <input type="text" id="groupNameInput" class="form-control" placeholder="e.g. Study Group" required>
+                    <label class="form-label small fw-semibold text-secondary">Group Name *</label>
+                    <input type="text" id="groupNameInput" class="form-control" placeholder="e.g. Project Discussion Group" required>
                 </div>
                 <div>
-                    <label class="form-label fw-semibold">Select Members</label>
-                    <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                    <label class="form-label small fw-semibold text-secondary">Select Registered Members</label>
+                    <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
                         {% for u in other_users %}
-                        <div class="form-check py-1">
+                        <div class="form-check py-1 border-bottom">
                             <input class="form-check-input group-member-cb" type="checkbox" value="{{ u.id }}" id="user_cb_{{ u.id }}">
-                            <label class="form-check-label" for="user_cb_{{ u.id }}">
-                                {{ u.name }} ({{ u.email }})
+                            <label class="form-check-label d-flex justify-content-between align-items-center" for="user_cb_{{ u.id }}">
+                                <span><strong>{{ u.name }}</strong> <small class="text-muted">({{ u.email }})</small></span>
+                                <span class="status-dot {{ 'online' if u.is_online else '' }}"></span>
                             </label>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="createGroupChat()">Create Group</button>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" onclick="createGroupChat()">Create Group</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL 3: Group Info & Management -->
 <div class="modal fade" id="groupInfoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow">
             <div class="modal-header">
                 <h6 class="modal-title fw-bold" id="groupInfoTitle">Group Members</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Add Member Form (Visible to Admins) -->
-                <div id="addMemberSection" class="mb-3 p-2 bg-light rounded border d-none">
-                    <label class="form-label small fw-bold mb-1">Add Member to Group</label>
+                <div id="addMemberSection" class="mb-3 p-3 bg-light rounded border d-none">
+                    <label class="form-label small fw-bold mb-1">Add Registered User to Group</label>
                     <div class="d-flex gap-2">
                         <select id="addMemberSelect" class="form-select form-select-sm">
-                            <option value="">-- Select User --</option>
+                            <option value="">-- Select Registered User --</option>
                             {% for u in other_users %}
-                            <option value="{{ u.id }}">{{ u.name }}</option>
+                            <option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>
                             {% endfor %}
                         </select>
                         <button type="button" class="btn btn-sm btn-primary" onclick="addGroupMember()">Add</button>
                     </div>
                 </div>
 
-                <ul class="list-group list-group-flush" id="groupMembersList">
-                    <!-- Populated dynamically -->
-                </ul>
+                <ul class="list-group list-group-flush" id="groupMembersList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="photoPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0 pb-0">
+                <span id="photoPreviewTitle" class="text-white small"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-2">
+                <img id="photoPreviewImg" src="" class="img-fluid rounded shadow" style="max-height: 80vh;">
             </div>
         </div>
     </div>
@@ -170,8 +264,9 @@
 
 {% block scripts %}
 <script>
-    // Pass current logged-in user id to javascript
-    const CURRENT_USER_ID = {{ current_user.id if current_user else 1 }};
+    const CURRENT_USER_ID = {{ current_user.id if current_user else 'null' }};
+    const CURRENT_USER_NAME = "{{ current_user.name if current_user else '' }}";
+    const CURRENT_USER_EMAIL = "{{ current_user.email if current_user else '' }}";
 </script>
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 {% endblock %}
