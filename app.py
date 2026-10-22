@@ -1,39 +1,45 @@
-import os
-from flask import Flask
-from database import init_db
-from extensions import socketio
-from sockets import register_socket_events
-from utils import get_current_user
-from models import get_all_users
-from routes.auth_routes import auth_bp
-from routes.chat_routes import chat_bp
-from routes.user_routes import user_bp
 
-def create_app():
-    app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'workspace-secret-key-2026'
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+from flask import Flask, redirect, url_for
+from flask_login import LoginManager
 
-    init_db()
+from extensions import db
+from email_module import email_bp
+from email_module.models import Email, User
+from auth_module import auth_bp
 
-    @app.context_processor
-    def inject_globals():
-        return {
-            'current_user': get_current_user(),
-            'all_users': get_all_users()
-        }
+app = Flask(__name__)
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(chat_bp)
-    app.register_blueprint(user_bp)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///email_chat.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-secret-key'
 
-    socketio.init_app(app, cors_allowed_origins="*")
-    register_socket_events(socketio)
+# Initialize Database
+db.init_app(app)
 
-    return app
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
 
-app = create_app()
+
+# Load Logged-in User
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# Register Blueprints
+app.register_blueprint(email_bp)
+app.register_blueprint(auth_bp)
+
+
+@app.route('/')
+def home():
+    return redirect(url_for('auth.login'))
+
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='127.0.0.1', port=5000, allow_unsafe_werkzeug=True)
+    with app.app_context():
+        db.create_all()
+
+    app.run(debug=True)

@@ -1,9 +1,19 @@
+# Python cache
 __pycache__/
 *.pyc
-*.pyo
+
+# Virtual environment
 venv/
 env/
+
+# SQLite database
+instance/*.db
+
+# Uploaded attachments
+email_module/uploads/attachments/*
+
+# Environment variables
 .env
+
+# VS Code settings
 .vscode/
-instance/*.sqlite
-instance/*.sqlite-journal
